@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>Restaurant</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <h1>Welcome to Our Restaurant</h1>
+    <div class="menu">
+        {% for dish in dishes %}
+            <div class="dish">
+                <h2>{{ dish.name }}</h2>
+                <p>{{ dish.description }}</p>
+                <p>Price: ${{ dish.price }}</p>
+                <a href="{% url 'dish_detail' dish.id %}">View Details</a>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
