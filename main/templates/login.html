@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Вход | Наш ресторан{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <p class="eyebrow">Рады видеть вас снова</p>
+    <h1>Войти</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {{ form.as_p }}
+        <button type="submit">Войти</button>
+    </form>
+    <p class="auth-switch">Ещё нет аккаунта? <a class="text-link" href="{% url 'register' %}">Присоединяйтесь</a>.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f8f5ef">
+    <title>{% block title %}Наш ресторан{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="{% url 'index' %}"><span class="brand-mark">Р</span> За общим столом</a>
+        <nav class="site-nav" aria-label="Основная навигация">
+            <a href="{% url 'index' %}">Меню</a>
+            <a class="cart-nav-link" href="{% url 'cart_detail' %}">
+                Корзина <span class="cart-nav-count" id="nav-cart-count"{% if not cart_item_count %} hidden{% endif %}>{{ cart_item_count }}</span>
+            </a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}">Выйти</a>
+                {% if user.is_staff or user.is_superuser %}
+                    <a href="{% url 'admin:index' %}">Управление</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}">Войти</a>
+                <a class="nav-cta" href="{% url 'register' %}">Присоединиться</a>
+            {% endif %}
+        </nav>
+    </header>
+    <main class="page-shell">
+        <div id="global-feedback" class="global-feedback" role="status" aria-live="polite"></div>
+        {% if messages %}
+            <div class="messages" aria-live="polite">
+                {% for message in messages %}
+                    <p class="message {{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">Вкусная еда. Хорошая компания. Всегда.</footer>
+    <script src="{% static 'js/cart.js' %}" defer></script>
+</body>
+</html>

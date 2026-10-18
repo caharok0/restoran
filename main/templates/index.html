@@ -1,22 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <title>Restaurant</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-</head>
-<body>
-    <h1>Welcome to Our Restaurant</h1>
+{% extends 'base.html' %}
+
+{% block title %}Меню | Наш ресторан{% endblock %}
+
+{% block content %}
+<section class="menu-section" aria-labelledby="menu-title">
+    <div class="section-heading">
+        <div>
+            <h2 id="menu-title">Наше меню</h2>
+        </div>
+        <span class="menu-count">Позиций в меню: {{ dishes|length }}</span>
+    </div>
     <div class="menu">
         {% for dish in dishes %}
-            <div class="dish">
-                <h2>{{ dish.name }}</h2>
-                <p>{{ dish.description }}</p>
-                <p>Price: ${{ dish.price }}</p>
-                <a href="{% url 'dish_detail' dish.id %}">View Details</a>
+            <article class="dish-card">
+                <div class="dish-card-top">
+                    <span class="dish-category">{{ dish.category.name }}</span>
+                    <span class="dish-price">{{ dish.price }} ₽</span>
+                </div>
+                <h3>{{ dish.name }}</h3>
+                {% if dish.average_rating %}
+                    <p class="dish-rating" aria-label="Средняя оценка {{ dish.average_rating|floatformat:1 }} из 5">
+                        <span class="stars" aria-hidden="true">★</span>
+                        <strong>{{ dish.average_rating|floatformat:1 }}</strong>
+                        <span>({{ dish.review_count }})</span>
+                    </p>
+                {% endif %}
+                <p>{{ dish.description|truncatewords:24 }}</p>
+                <div class="dish-actions">
+                    <a class="text-link" href="{% url 'dish_detail' dish.id %}">Подробнее о блюде <span aria-hidden="true">→</span></a>
+                    <form method="post" action="{% url 'cart_add' dish.id %}" data-cart-action>
+                        {% csrf_token %}
+                        <input type="hidden" name="quantity" value="1">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button class="button button-small" type="submit">В корзину</button>
+                    </form>
+                </div>
+            </article>
+        {% empty %}
+            <div class="empty-state">
+                <h3>Меню скоро появится.</h3>
+                <p>Загляните позже — мы готовим для вас новые блюда.</p>
             </div>
         {% endfor %}
     </div>
-</body>
-</html>
+</section>
+{% endblock %}

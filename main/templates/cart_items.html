@@ -1,0 +1,31 @@
+{% if cart_items %}
+    <div class="checkout-item-list">
+        {% for item in cart_items %}
+            <article class="checkout-item">
+                <div class="checkout-item-info">
+                    <h3>{{ item.dish.name }}</h3>
+                    <p>{{ item.price }} ₽ за порцию</p>
+                </div>
+                <form class="quantity-form" method="post" action="{% url 'cart_update' item.dish.id %}" data-cart-action>
+                    {% csrf_token %}
+                    <label class="visually-hidden" for="quantity-{{ item.dish.id }}">Количество: {{ item.dish.name }}</label>
+                    <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Уменьшить количество">−</button>
+                    <input id="quantity-{{ item.dish.id }}" type="number" name="quantity" min="1" max="99" value="{{ item.quantity }}" data-unit-price="{{ item.price }}" required>
+                    <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Увеличить количество">+</button>
+                </form>
+                <strong class="checkout-item-total" data-line-total>{{ item.total_price }} ₽</strong>
+                <form method="post" action="{% url 'cart_remove' item.dish.id %}" data-cart-action>
+                    {% csrf_token %}
+                    <button class="remove-item" type="submit" aria-label="Удалить {{ item.dish.name }}">Удалить</button>
+                </form>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state cart-empty">
+        <span class="empty-cart-icon" aria-hidden="true">🛒</span>
+        <h2>В корзине пока пусто</h2>
+        <p>Выберите блюда в меню — они появятся здесь.</p>
+        <a class="button" href="{% url 'index' %}">Перейти в меню</a>
+    </div>
+{% endif %}

@@ -1,14 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <title>{{ dish.name }}</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}{{ dish.name }} | Наш ресторан{% endblock %}
+
+{% block content %}
+<article class="dish-detail">
+    <a class="text-link back-link" href="{% url 'index' %}">← Вернуться в меню</a>
+    <p class="eyebrow">{{ dish.category.name }}</p>
     <h1>{{ dish.name }}</h1>
-    <p>{{ dish.description }}</p>
-    <p>Price: ${{ dish.price }}</p>
-</body>
-</html>
+    <p class="detail-description">{{ dish.description }}</p>
+    <p class="detail-price">Цена: {{ dish.price }} ₽</p>
+    <form method="post" action="{% url 'cart_add' dish.id %}" class="detail-cart-form" data-cart-action>
+        {% csrf_token %}
+        <label for="quantity">Количество</label>
+        <input id="quantity" type="number" name="quantity" value="1" min="1" required>
+        <button class="button" type="submit">Добавить в корзину</button>
+    </form>
+</article>
+
+<section class="reviews-section" aria-labelledby="reviews-title">
+    <header class="reviews-header">
+        <div>
+            <p class="eyebrow">Впечатления гостей</p>
+            <h2 id="reviews-title">Отзывы о блюде</h2>
+        </div>
+        <div class="rating-summary">
+            {% if average_rating %}
+                <strong class="rating-average">{{ average_rating|floatformat:1 }}</strong>
+                <span class="stars" aria-label="Средняя оценка {{ average_rating|floatformat:1 }} из 5">
+                    {% for star in '12345' %}
+                        <span{% if average_rating < forloop.counter %} class="star-empty"{% endif %}>★</span>
+                    {% endfor %}
+                </span>
+                <span class="rating-count">{{ review_count }} отзыв(ов)</span>
+            {% else %}
+                <span class="rating-count">Пока нет оценок</span>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="reviews-layout">
+        <div class="review-list">
+            {% for review in reviews %}
+                <article class="review-card">
+                    <header class="review-card-header">
+                        <div>
+                            <strong>{{ review.user.get_username }}</strong>
+                            <time datetime="{{ review.created_at|date:'c' }}">{{ review.created_at|date:'d.m.Y' }}</time>
+                        </div>
+                        <span class="stars" aria-label="Оценка {{ review.rating }} из 5">
+                            {% for star in '12345' %}
+                                <span{% if review.rating < forloop.counter %} class="star-empty"{% endif %}>★</span>
+                            {% endfor %}
+                        </span>
+                    </header>
+                    {% if not review.is_approved %}<p class="review-pending">Ваш отзыв ожидает проверки модератором и виден только вам.</p>{% endif %}
+                    <p class="review-comment">{{ review.comment|linebreaksbr }}</p>
+                </article>
+            {% empty %}
+                <div class="reviews-empty">
+                    <h3>Будьте первым, кто оставит отзыв</h3>
+                    <p>Расскажите другим гостям, что вы думаете об этом блюде.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <aside class="review-form-card">
+            {% if user.is_authenticated %}
+                <p class="eyebrow">Ваше мнение</p>
+                <h3>{% if own_review %}Изменить отзыв{% else %}Оставить отзыв{% endif %}</h3>
+                <form method="post" class="review-form">
+                    {% csrf_token %}
+                    <fieldset class="star-picker">
+                        <legend>{{ review_form.rating.label }}</legend>
+                        <div class="star-picker-options">
+                            {% for radio in review_form.rating %}
+                                <label for="{{ radio.id_for_label }}" title="{{ radio.choice_label }}">
+                                    {{ radio.tag }}
+                                    <span aria-hidden="true">★</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        {% for error in review_form.rating.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </fieldset>
+                    <div class="review-comment-field">
+                        {{ review_form.comment.label_tag }}
+                        {{ review_form.comment }}
+                        {% for error in review_form.comment.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </div>
+                    <button class="button" type="submit">Отправить на модерацию</button>
+                </form>
+            {% else %}
+                <p class="eyebrow">Поделитесь впечатлением</p>
+                <h3>Войдите, чтобы оставить отзыв</h3>
+                <p>Отзывы доступны зарегистрированным пользователям.</p>
+                <a class="button" href="{% url 'login' %}?next={{ request.path|urlencode }}">Войти</a>
+            {% endif %}
+        </aside>
+    </div>
+</section>
+{% endblock %}
