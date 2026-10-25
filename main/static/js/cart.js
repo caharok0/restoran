@@ -25,6 +25,14 @@
         badge.hidden = count < 1;
     }
 
+    function updateTotal(element, value) {
+        if (!element || element.textContent === value) return;
+        element.textContent = value;
+        element.classList.remove('is-changing');
+        void element.offsetWidth;
+        element.classList.add('is-changing');
+    }
+
     function recalculateVisibleTotal() {
         const inputs = document.querySelectorAll('#cart-items-region input[data-unit-price]');
         if (!inputs.length) return;
@@ -35,18 +43,20 @@
             const lineCents = unitCents * quantity;
             totalCents += lineCents;
             const lineTotal = input.closest('.checkout-item')?.querySelector('[data-line-total]');
-            if (lineTotal) lineTotal.textContent = formatMoney(lineCents / 100);
+            if (lineTotal) updateTotal(lineTotal, formatMoney(lineCents / 100));
         });
         const totalText = formatMoney(totalCents / 100);
         const total = document.getElementById('cart-grand-total');
         const buttonTotal = document.getElementById('checkout-button-total');
-        if (total) total.textContent = totalText;
-        if (buttonTotal) buttonTotal.textContent = totalText;
+        updateTotal(total, totalText);
+        updateTotal(buttonTotal, totalText);
     }
 
     async function submitCartForm(form) {
         const submitButton = form.querySelector('button[type="submit"]');
+        const region = document.getElementById('cart-items-region');
         if (submitButton) submitButton.disabled = true;
+        if (region) region.classList.add('is-updating');
         try {
             const response = await fetch(form.action, {
                 method: 'POST',
@@ -62,15 +72,14 @@
                 throw new Error(result.message || 'Не вдалося оновити кошик. Спробуйте ще раз.');
             }
 
-            const region = document.getElementById('cart-items-region');
             if (region && result.items_html !== undefined) region.innerHTML = result.items_html;
             setCartCount(result.item_count);
 
             const total = document.getElementById('cart-grand-total');
             const buttonTotal = document.getElementById('checkout-button-total');
             const count = document.getElementById('cart-item-count');
-            if (total) total.textContent = formatMoney(Number(result.total));
-            if (buttonTotal) buttonTotal.textContent = formatMoney(Number(result.total));
+            updateTotal(total, formatMoney(Number(result.total)));
+            updateTotal(buttonTotal, formatMoney(Number(result.total)));
             if (count) count.textContent = `${result.item_count} шт.`;
 
             const checkoutButton = document.querySelector('.checkout-submit');
@@ -80,6 +89,8 @@
         } catch (error) {
             showFeedback(error.message || 'Помилка з’єднання. Перевірте інтернет і спробуйте ще раз.', true);
             if (submitButton) submitButton.disabled = false;
+        } finally {
+            if (region) region.classList.remove('is-updating');
         }
     }
 
