@@ -8,15 +8,15 @@
                 </div>
                 <form class="quantity-form" method="post" action="{% url 'cart_update' item.dish.id %}" data-cart-action>
                     {% csrf_token %}
-                    <label class="visually-hidden" for="quantity-{{ item.dish.id }}">Количество: {{ item.dish.name }}</label>
-                    <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Уменьшить количество">−</button>
+                    <label class="visually-hidden" for="quantity-{{ item.dish.id }}">Кількість: {{ item.dish.name }}</label>
+                    <button class="quantity-step" type="button" data-quantity-step="-1" aria-label="Зменшити кількість">−</button>
                     <input id="quantity-{{ item.dish.id }}" type="number" name="quantity" min="1" max="99" value="{{ item.quantity }}" data-unit-price="{{ item.price }}" required>
-                    <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Увеличить количество">+</button>
+                    <button class="quantity-step" type="button" data-quantity-step="1" aria-label="Збільшити кількість">+</button>
                 </form>
                 <strong class="checkout-item-total" data-line-total>{{ item.total_price }} ₽</strong>
                 <form method="post" action="{% url 'cart_remove' item.dish.id %}" data-cart-action>
                     {% csrf_token %}
-                    <button class="remove-item" type="submit" aria-label="Удалить {{ item.dish.name }}">Удалить</button>
+                    <button class="remove-item" type="submit" aria-label="Видалити {{ item.dish.name }}">Видалити</button>
                 </form>
             </article>
         {% endfor %}
@@ -24,8 +24,8 @@
 {% else %}
     <div class="empty-state cart-empty">
         <span class="empty-cart-icon" aria-hidden="true">🛒</span>
-        <h2>В корзине пока пусто</h2>
-        <p>Выберите блюда в меню — они появятся здесь.</p>
-        <a class="button" href="{% url 'index' %}">Перейти в меню</a>
+        <h2>У кошику поки порожньо</h2>
+        <p>Виберіть страви в меню — вони з’являться тут.</p>
+        <a class="button" href="{% url 'index' %}">Перейти до меню</a>
     </div>
 {% endif %}

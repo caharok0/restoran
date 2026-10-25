@@ -6,27 +6,27 @@ from .models import Order, Review
 
 class CheckoutForm(forms.Form):
     customer_name = forms.CharField(
-        label='Ваше имя',
+        label='Ваше ім’я',
         max_length=120,
         widget=forms.TextInput(attrs={'autocomplete': 'name'}),
     )
     phone = forms.CharField(
-        label='Номер телефона',
+        label='Номер телефону',
         max_length=32,
         widget=forms.TextInput(attrs={'autocomplete': 'tel', 'inputmode': 'tel'}),
     )
     email = forms.EmailField(
-        label='Электронная почта (необязательно)',
+        label='Електронна пошта (необов’язково)',
         required=False,
         widget=forms.EmailInput(attrs={'autocomplete': 'email'}),
     )
     delivery_address = forms.CharField(
-        label='Адрес доставки',
+        label='Адреса доставки',
         max_length=255,
         widget=forms.TextInput(attrs={'autocomplete': 'street-address'}),
     )
     payment_method = forms.ChoiceField(
-        label='Способ оплаты',
+        label='Спосіб оплати',
         choices=Order.PaymentMethod.choices,
         widget=forms.RadioSelect,
         initial=Order.PaymentMethod.CASH,
@@ -35,14 +35,14 @@ class CheckoutForm(forms.Form):
 
 class ReviewForm(forms.ModelForm):
     rating = forms.ChoiceField(
-        label='Оценка',
+        label='Оцінка',
         choices=[(value, f'{value} ★') for value in range(5, 0, -1)],
         widget=forms.RadioSelect,
     )
     comment = forms.CharField(
-        label='Ваш отзыв',
+        label='Ваш відгук',
         max_length=2000,
-        widget=forms.Textarea(attrs={'rows': 4, 'placeholder': 'Поделитесь впечатлениями о блюде…'}),
+        widget=forms.Textarea(attrs={'rows': 4, 'placeholder': 'Поділіться враженнями про страву…'}),
     )
 
     class Meta:
@@ -53,9 +53,11 @@ class RegistrationForm(UserCreationForm):
     username = forms.CharField(
         required=False,
         max_length=150,
-        label='Имя пользователя (необязательно)',
+        label='Ім’я користувача (необов’язково)',
     )
-    email = forms.EmailField(required=False, label='Электронная почта (необязательно)')
+    email = forms.EmailField(required=False, label='Електронна пошта (необов’язково)')
+    password1 = forms.CharField(label='Пароль', strip=False, widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Підтвердження пароля', strip=False, widget=forms.PasswordInput)
 
     class Meta:
         model = User
@@ -64,7 +66,7 @@ class RegistrationForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data.get('email', '').strip().lower()
         if email and User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError('Аккаунт с таким адресом электронной почты уже существует.')
+            raise forms.ValidationError('Обліковий запис із такою адресою електронної пошти вже існує.')
         return email
 
     def clean(self):
@@ -73,7 +75,7 @@ class RegistrationForm(UserCreationForm):
         email = cleaned_data.get('email') or ''
 
         if not username and not email:
-            self.add_error('username', 'Укажите имя пользователя или адрес электронной почты.')
+            self.add_error('username', 'Вкажіть ім’я користувача або адресу електронної пошти.')
             return cleaned_data
 
         if not username:
@@ -90,7 +92,7 @@ class RegistrationForm(UserCreationForm):
 
 
 class LoginForm(AuthenticationForm):
-    username = forms.CharField(label='Имя пользователя или электронная почта', max_length=254)
+    username = forms.CharField(label='Ім’я користувача або електронна пошта', max_length=254)
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput)
 
     def clean(self):

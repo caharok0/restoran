@@ -3,16 +3,16 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 class Category(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Category Name")
+    name = models.CharField(max_length=100, verbose_name="Назва категорії")
 
     def __str__(self):
         return self.name
 
 class Dish(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Dish Name")
-    description = models.TextField(verbose_name="Description")
-    price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Price")
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='dishes', verbose_name="Category")
+    name = models.CharField(max_length=100, verbose_name="Назва страви")
+    description = models.TextField(verbose_name="Опис")
+    price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Ціна")
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='dishes', verbose_name="Категорія")
 
     def __str__(self):
         return self.name
@@ -26,13 +26,13 @@ class Review(models.Model):
         related_name='dish_reviews',
     )
     rating = models.PositiveSmallIntegerField(
-        choices=[(value, f'{value} из 5') for value in range(1, 6)],
+        choices=[(value, f'{value} з 5') for value in range(1, 6)],
         validators=[MinValueValidator(1), MaxValueValidator(5)],
-        verbose_name='Оценка',
+        verbose_name='Оцінка',
     )
-    comment = models.TextField(max_length=2000, verbose_name='Отзыв')
+    comment = models.TextField(max_length=2000, verbose_name='Відгук')
     created_at = models.DateTimeField(auto_now_add=True)
-    is_approved = models.BooleanField(default=False, verbose_name='Опубликован')
+    is_approved = models.BooleanField(default=False, verbose_name='Опубліковано')
 
     class Meta:
         ordering = ['-created_at']
@@ -42,22 +42,22 @@ class Review(models.Model):
         ]
 
     def __str__(self):
-        return f'Отзыв {self.user} о блюде «{self.dish}»'
+        return f'Відгук {self.user} про страву «{self.dish}»'
 
 
 class Order(models.Model):
     class PaymentMethod(models.TextChoices):
         ONLINE = 'online', 'Онлайн'
-        CASH = 'cash', 'Наличными при получении'
+        CASH = 'cash', 'Готівкою під час отримання'
 
     class Status(models.TextChoices):
-        NEW = 'new', 'Новый'
-        AWAITING_PAYMENT = 'awaiting_payment', 'Ожидает оплаты'
-        CONFIRMED = 'confirmed', 'Подтверждён'
-        PREPARING = 'preparing', 'Готовится'
-        OUT_FOR_DELIVERY = 'out_for_delivery', 'В пути'
-        DELIVERED = 'delivered', 'Доставлен'
-        CANCELLED = 'cancelled', 'Отменён'
+        NEW = 'new', 'Нове'
+        AWAITING_PAYMENT = 'awaiting_payment', 'Очікує на оплату'
+        CONFIRMED = 'confirmed', 'Підтверджено'
+        PREPARING = 'preparing', 'Готується'
+        OUT_FOR_DELIVERY = 'out_for_delivery', 'У дорозі'
+        DELIVERED = 'delivered', 'Доставлено'
+        CANCELLED = 'cancelled', 'Скасовано'
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -66,24 +66,24 @@ class Order(models.Model):
         blank=True,
         related_name='restaurant_orders',
     )
-    customer_name = models.CharField(max_length=120, verbose_name='Имя')
+    customer_name = models.CharField(max_length=120, verbose_name='Ім’я')
     phone = models.CharField(max_length=32, verbose_name='Телефон')
-    email = models.EmailField(blank=True, verbose_name='Электронная почта')
-    delivery_address = models.CharField(max_length=255, verbose_name='Адрес доставки')
+    email = models.EmailField(blank=True, verbose_name='Електронна пошта')
+    delivery_address = models.CharField(max_length=255, verbose_name='Адреса доставки')
     payment_method = models.CharField(
         max_length=16,
         choices=PaymentMethod.choices,
-        verbose_name='Способ оплаты',
+        verbose_name='Спосіб оплати',
     )
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.NEW)
-    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Сумма заказа')
+    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Сума замовлення')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Заказ №{self.pk}'
+        return f'Замовлення №{self.pk}'
 
 
 class OrderItem(models.Model):

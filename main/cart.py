@@ -17,10 +17,10 @@ class Cart:
         try:
             quantity = int(quantity)
         except (TypeError, ValueError) as exc:
-            raise ValueError('Количество должно быть целым числом.') from exc
+            raise ValueError('Кількість має бути цілим числом.') from exc
 
         if quantity < 1 or quantity > self.MAX_QUANTITY:
-            raise ValueError(f'Количество должно быть от 1 до {self.MAX_QUANTITY}.')
+            raise ValueError(f'Кількість має бути від 1 до {self.MAX_QUANTITY}.')
 
         dish_id = str(dish.pk)
         current_quantity = int(self.cart.get(dish_id, 0))

@@ -59,7 +59,7 @@
             });
             const result = await response.json();
             if (!response.ok || !result.ok) {
-                throw new Error(result.message || 'Не удалось обновить корзину. Попробуйте ещё раз.');
+                throw new Error(result.message || 'Не вдалося оновити кошик. Спробуйте ще раз.');
             }
 
             const region = document.getElementById('cart-items-region');
@@ -78,7 +78,7 @@
             if (submitButton && !submitButton.closest('.checkout-submit')) submitButton.disabled = false;
             showFeedback(result.message);
         } catch (error) {
-            showFeedback(error.message || 'Ошибка соединения. Проверьте интернет и повторите попытку.', true);
+            showFeedback(error.message || 'Помилка з’єднання. Перевірте інтернет і спробуйте ще раз.', true);
             if (submitButton) submitButton.disabled = false;
         }
     }

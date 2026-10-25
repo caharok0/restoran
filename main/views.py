@@ -1,7 +1,10 @@
+from decimal import Decimal
+
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
 from django.contrib.auth.views import redirect_to_login
 from django.db import transaction
+from django.db.models import Avg, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -10,10 +13,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .cart import Cart
-from django.db.models import Avg, Count, Q
-
 from .forms import CheckoutForm, LoginForm, RegistrationForm, ReviewForm
 from .models import Dish, Order, OrderItem, Review
+
 
 def index(request):
     dishes = Dish.objects.select_related('category').annotate(
@@ -23,13 +25,18 @@ def index(request):
     return render(request, 'index.html', {'dishes': dishes})
 
 
+def _cart_totals(items):
+    item_count = sum(item['quantity'] for item in items)
+    total = sum((item['total_price'] for item in items), start=Decimal('0.00'))
+    return item_count, total
+
+
 def dish_detail(request, dish_id):
     dish = get_object_or_404(Dish.objects.select_related('category'), pk=dish_id)
     own_review = None
     if request.user.is_authenticated:
         own_review = Review.objects.filter(dish=dish, user=request.user).first()
 
-    review_form = ReviewForm(instance=own_review)
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return redirect_to_login(request.get_full_path(), reverse('login'))
@@ -40,9 +47,11 @@ def dish_detail(request, dish_id):
             review.user = request.user
             review.is_approved = False
             review.save()
-            messages.success(request, 'Спасибо! Отзыв отправлен на проверку модератором.')
+            messages.success(request, 'Дякуємо! Відгук надіслано модератору на перевірку.')
             return redirect('dish_detail', dish_id=dish.pk)
-        messages.error(request, 'Проверьте оценку и текст отзыва.')
+        messages.error(request, 'Перевірте оцінку та текст відгуку.')
+    else:
+        review_form = ReviewForm(instance=own_review)
 
     approved_reviews = Review.objects.filter(dish=dish, is_approved=True).select_related('user')
     visible_reviews = approved_reviews
@@ -67,6 +76,7 @@ def dish_detail(request, dish_id):
 def cart_detail(request):
     cart = Cart(request)
     cart_items = list(cart)
+    item_count, cart_total = _cart_totals(cart_items)
     checkout_form = CheckoutForm(initial={
         'customer_name': request.user.get_full_name() if request.user.is_authenticated else '',
         'email': request.user.email if request.user.is_authenticated else '',
@@ -74,6 +84,8 @@ def cart_detail(request):
     return render(request, 'cart.html', {
         'cart': cart,
         'cart_items': cart_items,
+        'item_count': item_count,
+        'cart_total': cart_total,
         'checkout_form': checkout_form,
         'has_items': bool(cart_items),
     })
@@ -82,13 +94,14 @@ def cart_detail(request):
 def _cart_json(request, message):
     cart = Cart(request)
     cart_items = list(cart)
+    item_count, total = _cart_totals(cart_items)
     html = render_to_string('cart_items.html', {'cart_items': cart_items}, request=request)
     return JsonResponse({
         'ok': True,
         'message': message,
         'items_html': html,
-        'item_count': len(cart),
-        'total': str(cart.total_price),
+        'item_count': item_count,
+        'total': str(total),
         'has_items': bool(cart_items),
     })
 
@@ -111,12 +124,12 @@ def cart_add(request, dish_id):
         quantity = int(request.POST.get('quantity', 1))
         Cart(request).add(dish, quantity=quantity)
     except (TypeError, ValueError) as error:
-        message = str(error) or 'Укажите корректное количество.'
+        message = str(error) or 'Вкажіть коректну кількість.'
         if _expects_json(request):
             return JsonResponse({'ok': False, 'message': message}, status=400)
         messages.error(request, message)
     else:
-        message = f'«{dish.name}» добавлено в корзину.'
+        message = f'«{dish.name}» додано до кошика.'
         if _expects_json(request):
             return _cart_json(request, message)
         messages.success(request, message)
@@ -130,13 +143,13 @@ def cart_update(request, dish_id):
         quantity = int(request.POST.get('quantity', 0))
         Cart(request).add(dish, quantity=quantity, update_quantity=True)
     except (TypeError, ValueError) as error:
-        message = str(error) or 'Укажите корректное количество.'
+        message = str(error) or 'Вкажіть коректну кількість.'
         if _expects_json(request):
             return JsonResponse({'ok': False, 'message': message}, status=400)
         messages.error(request, message)
     else:
         if _expects_json(request):
-            return _cart_json(request, 'Корзина обновлена.')
+            return _cart_json(request, 'Кошик оновлено.')
     return redirect('cart_detail')
 
 
@@ -144,7 +157,7 @@ def cart_update(request, dish_id):
 def cart_remove(request, dish_id):
     dish = get_object_or_404(Dish, pk=dish_id)
     Cart(request).remove(dish)
-    message = f'«{dish.name}» удалено из корзины.'
+    message = f'«{dish.name}» видалено з кошика.'
     if _expects_json(request):
         return _cart_json(request, message)
     messages.success(request, message)
@@ -158,19 +171,22 @@ def checkout(request):
     cart = Cart(request)
     cart_items = list(cart)
     if not cart_items:
-        messages.error(request, 'Корзина пуста — добавьте блюда перед оформлением заказа.')
+        messages.error(request, 'Кошик порожній — додайте страви перед оформленням замовлення.')
         return redirect('cart_detail')
 
     form = CheckoutForm(request.POST)
     if not form.is_valid():
+        item_count, cart_total = _cart_totals(cart_items)
         return render(request, 'cart.html', {
             'cart': cart,
             'cart_items': cart_items,
+            'item_count': item_count,
+            'cart_total': cart_total,
             'checkout_form': form,
             'has_items': True,
         })
 
-    total = sum((item['total_price'] for item in cart_items), start=cart.total_price * 0)
+    total = sum((item['total_price'] for item in cart_items), start=Decimal('0.00'))
     payment_method = form.cleaned_data['payment_method']
     status = (
         Order.Status.AWAITING_PAYMENT
@@ -201,7 +217,7 @@ def checkout(request):
 
     cart.clear()
     request.session['last_order_id'] = order.pk
-    messages.success(request, f'Заказ №{order.pk} успешно оформлен.')
+    messages.success(request, f'Замовлення №{order.pk} успішно оформлено.')
     return redirect('order_success', order_id=order.pk)
 
 
@@ -220,10 +236,9 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, 'Регистрация прошла успешно.')
+            messages.success(request, 'Реєстрацію успішно завершено.')
             return redirect('index')
-        else:
-            messages.error(request, 'Не удалось зарегистрироваться. Проверьте введённые данные.')
+        messages.error(request, 'Не вдалося зареєструватися. Перевірте введені дані.')
     else:
         form = RegistrationForm()
     return render(request, 'register.html', {'form': form})
@@ -233,24 +248,18 @@ def login_view(request):
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                messages.success(request, f'Добро пожаловать, {username}!')
-                next_url = request.POST.get('next') or request.GET.get('next')
-                if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
-                    return redirect(next_url)
-                return redirect('index')
-            else:
-                messages.error(request, 'Неверное имя пользователя, адрес электронной почты или пароль.')
-        else:
-            messages.error(request, 'Неверное имя пользователя, адрес электронной почты или пароль.')
+            login(request, form.get_user())
+            messages.success(request, f'Вітаємо, {username}!')
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url and url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+                return redirect(next_url)
+            return redirect('index')
+        messages.error(request, 'Неправильне ім’я користувача, адреса електронної пошти або пароль.')
     else:
         form = LoginForm()
     return render(request, 'login.html', {'form': form, 'next': request.GET.get('next', '')})
 
 def logout_view(request):
     logout(request)
-    messages.success(request, 'Вы вышли из аккаунта.')
+    messages.success(request, 'Ви вийшли з облікового запису.')
     return redirect('login')

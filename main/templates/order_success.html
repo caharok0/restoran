@@ -1,21 +1,21 @@
 {% extends 'base.html' %}
 
-{% block title %}Заказ оформлен | Наш ресторан{% endblock %}
+{% block title %}Замовлення оформлено | Наш ресторан{% endblock %}
 
 {% block content %}
 <section class="order-success">
     <span class="order-success-mark" aria-hidden="true">✓</span>
-    <p class="eyebrow">Спасибо за заказ</p>
-    <h1>Заказ №{{ order.pk }} принят</h1>
-    <p>Мы свяжемся с вами по телефону <strong>{{ order.phone }}</strong>, чтобы подтвердить доставку.</p>
+    <p class="eyebrow">Дякуємо за замовлення</p>
+    <h1>Замовлення №{{ order.pk }} прийнято</h1>
+    <p>Ми зв’яжемося з вами за номером <strong>{{ order.phone }}</strong>, щоб підтвердити доставку.</p>
     <div class="success-order-total">
-        <span>Сумма заказа</span>
+        <span>Сума замовлення</span>
         <strong>{{ order.total }} ₽</strong>
         <small>Оплата: {{ order.get_payment_method_display }}</small>
     </div>
     {% if order.payment_method == 'online' %}
-        <p>Онлайн-оплата пока не подключена. Менеджер сообщит, как оплатить заказ после подтверждения.</p>
+        <p>Онлайн-оплату ще не підключено. Менеджер повідомить, як оплатити замовлення після підтвердження.</p>
     {% endif %}
-    <a class="button" href="{% url 'index' %}">Вернуться в меню</a>
+    <a class="button" href="{% url 'index' %}">Повернутися до меню</a>
 </section>
 {% endblock %}

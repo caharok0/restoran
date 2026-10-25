@@ -22,12 +22,12 @@ class OrderAdmin(admin.ModelAdmin):
 	inlines = (OrderItemInline,)
 
 
-@admin.action(description='Одобрить выбранные отзывы')
+@admin.action(description='Схвалити вибрані відгуки')
 def approve_reviews(modeladmin, request, queryset):
     queryset.update(is_approved=True)
 
 
-@admin.action(description='Скрыть выбранные отзывы')
+@admin.action(description='Приховати вибрані відгуки')
 def hide_reviews(modeladmin, request, queryset):
     queryset.update(is_approved=False)
 

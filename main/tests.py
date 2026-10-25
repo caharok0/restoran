@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from decimal import Decimal
 
 from .cart import Cart
-from .models import Category, Dish, Order, OrderItem, Review
+from .models import Category, Dish, Order, Review
 
 
 class RegistrationAndLoginTests(TestCase):
@@ -41,7 +41,7 @@ class RegistrationAndLoginTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertFalse(User.objects.exists())
-		self.assertContains(response, 'Укажите имя пользователя или адрес электронной почты.')
+		self.assertContains(response, 'Вкажіть ім’я користувача або адресу електронної пошти.')
 
 	def test_login_with_email(self):
 		User.objects.create_user(
@@ -92,7 +92,7 @@ class ShoppingCartTests(TestCase):
 		response = self.client.post(f'/cart/remove/{self.dish.pk}/')
 
 		self.assertRedirects(response, '/cart/')
-		self.assertContains(self.client.get('/cart/'), 'В корзине пока пусто')
+		self.assertContains(self.client.get('/cart/'), 'У кошику поки порожньо')
 
 	def test_update_view_replaces_quantity(self):
 		self.client.post(f'/cart/add/{self.dish.pk}/', {'quantity': '2'})
@@ -127,7 +127,7 @@ class ShoppingCartTests(TestCase):
 		self.assertEqual(order.items.get().quantity, 2)
 		self.assertEqual(order.items.get().dish_name, self.dish.name)
 		self.assertEqual(self.client.session.get('cart', {}), {})
-		self.assertContains(self.client.get(response.url), 'Заказ №')
+		self.assertContains(self.client.get(response.url), 'Замовлення №')
 
 	def test_online_checkout_is_saved_as_awaiting_payment(self):
 		self.client.post(f'/cart/add/{self.dish.pk}/', {'quantity': '1'})
@@ -153,7 +153,7 @@ class ShoppingCartTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertFalse(Order.objects.exists())
 		self.assertTrue(self.client.session.get('cart'))
-		self.assertContains(response, 'Обязательное поле')
+		self.assertContains(response, 'Це поле')
 
 	def test_empty_cart_cannot_be_checked_out(self):
 		response = self.client.post('/checkout/', {
@@ -222,7 +222,7 @@ class DishReviewTests(TestCase):
 		review = Review.objects.get()
 		self.assertFalse(review.is_approved)
 		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Отличное блюдо')
-		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Пока нет оценок')
+		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Поки немає оцінок')
 
 		self.client.logout()
 		self.assertNotContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Отличное блюдо')
@@ -242,7 +242,7 @@ class DishReviewTests(TestCase):
 
 		self.assertEqual(response.status_code, 302)
 		self.assertIn('/admin/login/', response.url)
-		self.assertNotContains(self.client.get('/'), 'Управление')
+		self.assertNotContains(self.client.get('/'), 'Керування')
 
 	def test_staff_admin_can_open_review_moderation(self):
 		admin_user = User.objects.create_superuser(
@@ -253,4 +253,4 @@ class DishReviewTests(TestCase):
 		self.client.force_login(admin_user)
 
 		self.assertEqual(self.client.get('/admin/main/review/').status_code, 200)
-		self.assertContains(self.client.get('/'), 'Управление')
+		self.assertContains(self.client.get('/'), 'Керування')

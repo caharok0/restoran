@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 
-{% block title %}Регистрация | Наш ресторан{% endblock %}
+{% block title %}Реєстрація | Наш ресторан{% endblock %}
 
 {% block content %}
 <section class="auth-card">
-    <p class="eyebrow">Место за нашим столом</p>
-    <h1>Создать аккаунт</h1>
-    <p class="auth-switch">Укажите имя пользователя или адрес электронной почты. Если укажете имя пользователя, почта необязательна.</p>
+    <p class="eyebrow">Місце за нашим столом</p>
+    <h1>Створити обліковий запис</h1>
+    <p class="auth-switch">Вкажіть ім’я користувача або адресу електронної пошти. Якщо вкажете ім’я користувача, пошта необов’язкова.</p>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Создать аккаунт</button>
+        <button type="submit">Створити обліковий запис</button>
     </form>
-    <p class="auth-switch">Уже есть аккаунт? <a class="text-link" href="{% url 'login' %}">Войти</a>.</p>
+    <p class="auth-switch">Вже маєте обліковий запис? <a class="text-link" href="{% url 'login' %}">Увійти</a>.</p>
 </section>
 {% endblock %}
