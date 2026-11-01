@@ -59,6 +59,90 @@ class RegistrationAndLoginTests(TestCase):
 		self.assertTrue(response.wsgi_request.user.is_authenticated)
 
 
+class MenuManagementTests(TestCase):
+	def setUp(self):
+		self.category = Category.objects.create(name='Гарячі страви')
+		self.dish = Dish.objects.create(
+			name='Паста',
+			description='Паста з овочами',
+			price=Decimal('12.50'),
+			category=self.category,
+		)
+		self.staff_user = User.objects.create_user(
+			username='menu_manager',
+			password='SafePassword_726!',
+			is_staff=True,
+		)
+		self.regular_user = User.objects.create_user(
+			username='regular_customer',
+			password='SafePassword_726!',
+		)
+
+	def test_regular_user_cannot_access_or_modify_menu(self):
+		self.client.force_login(self.regular_user)
+
+		response = self.client.get('/manage/menu/')
+		self.assertRedirects(response, '/login/?next=/manage/menu/', fetch_redirect_response=False)
+		self.assertNotContains(self.client.get('/'), 'Керування меню')
+
+		response = self.client.post('/manage/menu/add/', {
+			'name': 'Секретна страва',
+			'description': 'Не має бути додана',
+			'price': '10.00',
+			'category': self.category.pk,
+		})
+		self.assertEqual(response.status_code, 302)
+		self.assertFalse(Dish.objects.filter(name='Секретна страва').exists())
+
+		self.client.post(f'/manage/menu/{self.dish.pk}/edit/', {
+			'name': 'Змінена страва',
+			'description': 'Змінений опис',
+			'price': '15.00',
+			'category': self.category.pk,
+		})
+		self.dish.refresh_from_db()
+		self.assertEqual(self.dish.name, 'Паста')
+
+		self.client.post(f'/manage/menu/{self.dish.pk}/delete/')
+		self.assertTrue(Dish.objects.filter(pk=self.dish.pk).exists())
+
+	def test_staff_user_can_add_change_and_delete_dishes(self):
+		self.client.force_login(self.staff_user)
+		self.assertEqual(self.client.get('/manage/menu/').status_code, 200)
+		self.assertContains(self.client.get('/'), 'Керування меню')
+
+		response = self.client.post('/manage/menu/add/', {
+			'name': 'Овочевий суп',
+			'description': 'Сезонні овочі',
+			'price': '8.75',
+			'category': self.category.pk,
+		})
+		self.assertRedirects(response, '/manage/menu/')
+		dish = Dish.objects.get(name='Овочевий суп')
+		self.assertEqual(dish.price, Decimal('8.75'))
+
+		response = self.client.post(f'/manage/menu/{dish.pk}/edit/', {
+			'name': 'Суп дня',
+			'description': 'Оновлений опис',
+			'price': '9.25',
+			'category': self.category.pk,
+		})
+		self.assertRedirects(response, '/manage/menu/')
+		dish.refresh_from_db()
+		self.assertEqual(dish.name, 'Суп дня')
+		self.assertEqual(dish.price, Decimal('9.25'))
+
+		response = self.client.post(f'/manage/menu/{dish.pk}/delete/')
+		self.assertRedirects(response, '/manage/menu/')
+		self.assertFalse(Dish.objects.filter(pk=dish.pk).exists())
+
+	def test_delete_requires_post(self):
+		self.client.force_login(self.staff_user)
+		response = self.client.get(f'/manage/menu/{self.dish.pk}/delete/')
+		self.assertEqual(response.status_code, 405)
+		self.assertTrue(Dish.objects.filter(pk=self.dish.pk).exists())
+
+
 class ShoppingCartTests(TestCase):
 	def setUp(self):
 		self.category = Category.objects.create(name='Горячее')
@@ -211,7 +295,7 @@ class DishReviewTests(TestCase):
 		self.assertRedirects(response, f'/login/?next=/dish/{self.dish.pk}/', fetch_redirect_response=False)
 		self.assertFalse(Review.objects.exists())
 
-	def test_submitted_review_is_private_until_moderated(self):
+	def test_submitted_review_is_published_immediately(self):
 		self.client.force_login(self.user)
 		response = self.client.post(
 			f'/dish/{self.dish.pk}/',
@@ -220,12 +304,12 @@ class DishReviewTests(TestCase):
 
 		self.assertRedirects(response, f'/dish/{self.dish.pk}/')
 		review = Review.objects.get()
-		self.assertFalse(review.is_approved)
+		self.assertTrue(review.is_approved)
 		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Отличное блюдо')
-		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Поки немає оцінок')
+		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), '5,0')
 
 		self.client.logout()
-		self.assertNotContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Отличное блюдо')
+		self.assertContains(self.client.get(f'/dish/{self.dish.pk}/'), 'Отличное блюдо')
 
 	def test_approved_reviews_are_averaged_on_detail_and_menu(self):
 		second_user = User.objects.create_user(username='another', password='SafePassword_726!')

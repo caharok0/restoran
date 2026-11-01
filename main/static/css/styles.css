@@ -331,3 +331,36 @@ button, input, textarea { -webkit-tap-highlight-color: transparent; }
 .quantity-step:hover { border-color: var(--green); color: #fff; background: var(--green); }
 .checkout-item-info { min-width: 0; }
 
+.menu-management { padding: 52px 0 84px; }
+.management-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
+.management-heading .eyebrow, .management-form-card .eyebrow { margin-bottom: 4px; color: var(--green); }
+.management-heading h1, .management-form-card h1 { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: clamp(32px, 5vw, 46px); font-weight: 500; letter-spacing: -.03em; }
+.management-heading p:not(.eyebrow) { margin: 6px 0 0; color: var(--muted); }
+.management-list { display: grid; gap: 12px; }
+.management-dish { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 23px; border: 1px solid var(--line); border-radius: 15px; background: var(--card); box-shadow: 0 5px 20px rgba(48, 51, 42, .035); }
+.management-dish-info { min-width: 0; }
+.management-dish-info h2 { margin: 8px 0 3px; font-family: 'Playfair Display', Georgia, serif; font-size: 21px; }
+.management-dish-info p { margin: 0 0 7px; color: var(--muted); font-size: 13px; }
+.management-dish-info > strong { color: var(--green); }
+.management-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+.management-actions form { margin: 0; }
+.button-danger { background: #9b5145; }
+.button-danger:hover { background: #803d33; }
+.management-form-card { max-width: 680px; margin: 52px auto 84px; padding: clamp(24px, 5vw, 42px); border: 1px solid var(--line); border-radius: 20px; background: var(--card); box-shadow: var(--shadow-soft); }
+.management-back { display: inline-block; margin-bottom: 27px; }
+.management-form { display: grid; gap: 17px; margin-top: 23px; }
+.management-field { display: grid; gap: 6px; }
+.management-field label { color: #414a40; font-size: 13px; font-weight: 700; }
+.management-field input, .management-field textarea, .management-field select { width: 100%; min-height: 45px; padding: 10px 12px; border: 1px solid #dedbd2; border-radius: 9px; background: #fffefa; color: var(--ink); font: inherit; font-size: 14px; }
+.management-field textarea { min-height: 120px; resize: vertical; }
+.management-field input:focus, .management-field textarea:focus, .management-field select:focus { outline: 0; border-color: #77937d; box-shadow: 0 0 0 3px rgba(53, 91, 69, .1); }
+.management-field.has-error input, .management-field.has-error textarea, .management-field.has-error select { border-color: #bd675b; }
+.management-field small { color: var(--muted); }
+.management-form-actions { display: flex; align-items: center; gap: 18px; margin-top: 5px; }
+
+@media (max-width: 600px) {
+    .management-heading { align-items: flex-start; flex-direction: column; }
+    .management-dish { align-items: flex-start; flex-direction: column; padding: 18px; }
+    .management-actions { width: 100%; }
+}
+

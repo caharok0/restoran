@@ -18,7 +18,7 @@
             {% if user.is_authenticated %}
                 <a href="{% url 'logout' %}">Вийти</a>
                 {% if user.is_staff or user.is_superuser %}
-                    <a href="{% url 'admin:index' %}">Керування</a>
+                    <a href="{% url 'menu_management' %}">Керування меню</a>
                 {% endif %}
             {% else %}
                 <a href="{% url 'login' %}">Увійти</a>

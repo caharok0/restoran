@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Керування меню | Наш ресторан{% endblock %}
+
+{% block content %}
+<section class="menu-management" aria-labelledby="management-title">
+    <div class="management-heading">
+        <div>
+            <p class="eyebrow">Панель ресторану</p>
+            <h1 id="management-title">Керування меню</h1>
+            <p>Додавайте страви та оновлюйте інформацію, яку бачать гості.</p>
+        </div>
+        <a class="button" href="{% url 'dish_add' %}">Додати страву <span aria-hidden="true">＋</span></a>
+    </div>
+
+    <div class="management-list">
+        {% for dish in dishes %}
+            <article class="management-dish">
+                <div class="management-dish-info">
+                    <span class="dish-category">{{ dish.category.name }}</span>
+                    <h2>{{ dish.name }}</h2>
+                    <p>{{ dish.description|truncatewords:24 }}</p>
+                    <strong>{{ dish.price }} ₽</strong>
+                </div>
+                <div class="management-actions">
+                    <a class="button button-small" href="{% url 'dish_edit' dish.id %}">Змінити</a>
+                    <form method="post" action="{% url 'dish_delete' dish.id %}" onsubmit="return confirm('Видалити страву «{{ dish.name|escapejs }}»?');">
+                        {% csrf_token %}
+                        <button class="button button-small button-danger" type="submit">Видалити</button>
+                    </form>
+                </div>
+            </article>
+        {% empty %}
+            <div class="empty-state">
+                <h2>У меню поки немає страв</h2>
+                <p>Додайте першу позицію, щоб вона з’явилася на головній сторінці.</p>
+                <a class="button" href="{% url 'dish_add' %}">Додати першу страву</a>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

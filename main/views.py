@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib import messages
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import redirect_to_login
 from django.db import transaction
@@ -13,7 +14,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .cart import Cart
-from .forms import CheckoutForm, LoginForm, RegistrationForm, ReviewForm
+from .forms import CheckoutForm, DishForm, LoginForm, RegistrationForm, ReviewForm
 from .models import Dish, Order, OrderItem, Review
 
 
@@ -23,6 +24,40 @@ def index(request):
         review_count=Count('reviews', filter=Q(reviews__is_approved=True)),
     )
     return render(request, 'index.html', {'dishes': dishes})
+
+
+@user_passes_test(lambda user: user.is_staff, login_url='login')
+def menu_management(request):
+    dishes = Dish.objects.select_related('category').order_by('category__name', 'name')
+    return render(request, 'menu_management.html', {'dishes': dishes})
+
+
+@user_passes_test(lambda user: user.is_staff, login_url='login')
+def dish_edit(request, dish_id=None):
+    dish = get_object_or_404(Dish, pk=dish_id) if dish_id is not None else None
+    if request.method == 'POST':
+        form = DishForm(request.POST, instance=dish)
+        if form.is_valid():
+            form.save()
+            message = 'Страву оновлено.' if dish is not None else 'Страву додано до меню.'
+            messages.success(request, message)
+            return redirect('menu_management')
+    else:
+        form = DishForm(instance=dish)
+    return render(request, 'dish_manage_form.html', {
+        'form': form,
+        'dish': dish,
+    })
+
+
+@user_passes_test(lambda user: user.is_staff, login_url='login')
+@require_POST
+def dish_delete(request, dish_id):
+    dish = get_object_or_404(Dish, pk=dish_id)
+    dish_name = dish.name
+    dish.delete()
+    messages.success(request, f'Страву «{dish_name}» видалено з меню.')
+    return redirect('menu_management')
 
 
 def _cart_totals(items):
@@ -45,9 +80,9 @@ def dish_detail(request, dish_id):
             review = review_form.save(commit=False)
             review.dish = dish
             review.user = request.user
-            review.is_approved = False
+            review.is_approved = True
             review.save()
-            messages.success(request, 'Дякуємо! Відгук надіслано модератору на перевірку.')
+            messages.success(request, 'Дякуємо! Ваш відгук опубліковано.')
             return redirect('dish_detail', dish_id=dish.pk)
         messages.error(request, 'Перевірте оцінку та текст відгуку.')
     else:

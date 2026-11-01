@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from .models import Order, Review
+from .models import Dish, Order, Review
 
 
 class CheckoutForm(forms.Form):
@@ -48,6 +48,17 @@ class ReviewForm(forms.ModelForm):
     class Meta:
         model = Review
         fields = ('rating', 'comment')
+
+
+class DishForm(forms.ModelForm):
+    class Meta:
+        model = Dish
+        fields = ('name', 'description', 'price', 'category')
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Наприклад, паста з грибами'}),
+            'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Опишіть склад та особливості страви'}),
+            'price': forms.NumberInput(attrs={'min': '0.01', 'step': '0.01'}),
+        }
 
 class RegistrationForm(UserCreationForm):
     username = forms.CharField(

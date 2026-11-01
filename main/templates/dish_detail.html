@@ -53,7 +53,7 @@
                             {% endfor %}
                         </span>
                     </header>
-                    {% if not review.is_approved %}<p class="review-pending">Ваш відгук очікує на перевірку модератором і наразі видимий лише вам.</p>{% endif %}
+                    {% if not review.is_approved %}<p class="review-pending">Відгук очікує на публікацію.</p>{% endif %}
                     <p class="review-comment">{{ review.comment|linebreaksbr }}</p>
                 </article>
             {% empty %}
@@ -87,7 +87,7 @@
                         {{ review_form.comment }}
                         {% for error in review_form.comment.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
                     </div>
-                    <button class="button" type="submit">Надіслати на модерацію</button>
+                    <button class="button" type="submit">Опублікувати відгук</button>
                 </form>
             {% else %}
                 <p class="eyebrow">Поділіться враженнями</p>
