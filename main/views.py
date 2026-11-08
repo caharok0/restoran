@@ -17,6 +17,8 @@ from .cart import Cart
 from .forms import CheckoutForm, DishForm, LoginForm, RegistrationForm, ReviewForm
 from .models import Category, Dish, Order, OrderItem, Review
 
+staff_required = user_passes_test(lambda user: user.is_staff, login_url='login')
+
 
 def index(request):
     dishes = Dish.objects.select_related('category').annotate(
@@ -26,7 +28,7 @@ def index(request):
     return render(request, 'index.html', {'dishes': dishes})
 
 
-@user_passes_test(lambda user: user.is_staff, login_url='login')
+@staff_required
 def menu_management(request):
     query = request.GET.get('q', '').strip()
     category_id = request.GET.get('category', '').strip()
@@ -51,7 +53,7 @@ def menu_management(request):
     })
 
 
-@user_passes_test(lambda user: user.is_staff, login_url='login')
+@staff_required
 def dish_edit(request, dish_id=None):
     dish = get_object_or_404(Dish, pk=dish_id) if dish_id is not None else None
     if request.method == 'POST':
@@ -69,7 +71,7 @@ def dish_edit(request, dish_id=None):
     })
 
 
-@user_passes_test(lambda user: user.is_staff, login_url='login')
+@staff_required
 @require_POST
 def dish_delete(request, dish_id):
     dish = get_object_or_404(Dish, pk=dish_id)
@@ -136,7 +138,6 @@ def cart_detail(request):
         'email': request.user.email if request.user.is_authenticated else '',
     })
     return render(request, 'cart.html', {
-        'cart': cart,
         'cart_items': cart_items,
         'item_count': item_count,
         'cart_total': cart_total,
@@ -227,12 +228,11 @@ def checkout(request):
     if not cart_items:
         messages.error(request, 'Кошик порожній — додайте страви перед оформленням замовлення.')
         return redirect('cart_detail')
+    item_count, cart_total = _cart_totals(cart_items)
 
     form = CheckoutForm(request.POST)
     if not form.is_valid():
-        item_count, cart_total = _cart_totals(cart_items)
         return render(request, 'cart.html', {
-            'cart': cart,
             'cart_items': cart_items,
             'item_count': item_count,
             'cart_total': cart_total,
@@ -240,7 +240,6 @@ def checkout(request):
             'has_items': True,
         })
 
-    total = sum((item['total_price'] for item in cart_items), start=Decimal('0.00'))
     payment_method = form.cleaned_data['payment_method']
     status = (
         Order.Status.AWAITING_PAYMENT
@@ -256,7 +255,7 @@ def checkout(request):
             delivery_address=form.cleaned_data['delivery_address'],
             payment_method=payment_method,
             status=status,
-            total=total,
+            total=cart_total,
         )
         OrderItem.objects.bulk_create([
             OrderItem(
