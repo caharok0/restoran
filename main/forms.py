@@ -53,12 +53,24 @@ class ReviewForm(forms.ModelForm):
 class DishForm(forms.ModelForm):
     class Meta:
         model = Dish
-        fields = ('name', 'description', 'price', 'category')
+        fields = ('name', 'description', 'price', 'category', 'image', 'image_url')
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Наприклад, паста з грибами'}),
             'description': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Опишіть склад та особливості страви'}),
             'price': forms.NumberInput(attrs={'min': '0.01', 'step': '0.01'}),
+            'image': forms.ClearableFileInput(attrs={
+                'accept': 'image/jpeg,image/png,image/webp,image/gif',
+            }),
+            'image_url': forms.URLInput(attrs={
+                'placeholder': 'https://example.com/photo.jpg',
+            }),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('image') and cleaned_data.get('image_url'):
+            self.add_error('image_url', 'Оберіть завантаження фото або посилання — не обидва варіанти.')
+        return cleaned_data
 
 class RegistrationForm(UserCreationForm):
     username = forms.CharField(

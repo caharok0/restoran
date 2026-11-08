@@ -13,6 +13,11 @@
     <div class="menu">
         {% for dish in dishes %}
             <article class="dish-card">
+                {% if dish.image %}
+                    <img class="dish-card-image" src="{{ dish.image.url }}" alt="Фото страви {{ dish.name }}" loading="lazy" decoding="async">
+                {% elif dish.image_url %}
+                    <img class="dish-card-image" src="{{ dish.image_url }}" alt="Фото страви {{ dish.name }}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                {% endif %}
                 <div class="dish-card-top">
                     <span class="dish-category">{{ dish.category.name }}</span>
                     <span class="dish-price">{{ dish.price }} ₽</span>

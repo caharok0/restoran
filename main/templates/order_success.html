@@ -8,6 +8,20 @@
     <p class="eyebrow">Дякуємо за замовлення</p>
     <h1>Замовлення №{{ order.pk }} прийнято</h1>
     <p>Ми зв’яжемося з вами за номером <strong>{{ order.phone }}</strong>, щоб підтвердити доставку.</p>
+    <section class="success-order-items" aria-labelledby="success-items-title">
+        <h2 id="success-items-title">Ваше замовлення</h2>
+        {% for item in order.items.all %}
+            <div class="success-order-item">
+                <div>
+                    <strong>{{ item.dish_name }}</strong>
+                    <span>{{ item.quantity }} × {{ item.unit_price }} ₽</span>
+                </div>
+                <strong class="success-item-total">{{ item.line_total }} ₽</strong>
+            </div>
+        {% empty %}
+            <p class="success-order-empty">Склад замовлення недоступний.</p>
+        {% endfor %}
+    </section>
     <div class="success-order-total">
         <span>Сума замовлення</span>
         <strong>{{ order.total }} ₽</strong>

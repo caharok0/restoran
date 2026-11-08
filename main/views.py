@@ -15,7 +15,7 @@ from django.views.decorators.http import require_POST
 
 from .cart import Cart
 from .forms import CheckoutForm, DishForm, LoginForm, RegistrationForm, ReviewForm
-from .models import Dish, Order, OrderItem, Review
+from .models import Category, Dish, Order, OrderItem, Review
 
 
 def index(request):
@@ -28,15 +28,34 @@ def index(request):
 
 @user_passes_test(lambda user: user.is_staff, login_url='login')
 def menu_management(request):
-    dishes = Dish.objects.select_related('category').order_by('category__name', 'name')
-    return render(request, 'menu_management.html', {'dishes': dishes})
+    query = request.GET.get('q', '').strip()
+    category_id = request.GET.get('category', '').strip()
+    dishes = Dish.objects.select_related('category')
+    if query:
+        dishes = dishes.filter(
+            Q(name__icontains=query)
+            | Q(description__icontains=query)
+            | Q(category__name__icontains=query)
+        )
+    if category_id:
+        dishes = dishes.filter(category_id=category_id)
+    dishes = dishes.order_by('category__name', 'name')
+    return render(request, 'menu_management.html', {
+        'dishes': dishes,
+        'categories': Category.objects.order_by('name'),
+        'query': query,
+        'selected_category': category_id,
+        'visible_dish_count': dishes.count(),
+        'total_dish_count': Dish.objects.count(),
+        'category_count': Dish.objects.values('category_id').distinct().count(),
+    })
 
 
 @user_passes_test(lambda user: user.is_staff, login_url='login')
 def dish_edit(request, dish_id=None):
     dish = get_object_or_404(Dish, pk=dish_id) if dish_id is not None else None
     if request.method == 'POST':
-        form = DishForm(request.POST, instance=dish)
+        form = DishForm(request.POST, request.FILES, instance=dish)
         if form.is_valid():
             form.save()
             message = 'Страву оновлено.' if dish is not None else 'Страву додано до меню.'
@@ -257,7 +276,7 @@ def checkout(request):
 
 
 def order_success(request, order_id):
-    order = get_object_or_404(Order, pk=order_id)
+    order = get_object_or_404(Order.objects.prefetch_related('items'), pk=order_id)
     is_owner = request.user.is_authenticated and order.user_id == request.user.pk
     if request.session.get('last_order_id') != order.pk and not is_owner:
         return redirect('index')

@@ -8,35 +8,83 @@
         <div>
             <p class="eyebrow">Панель ресторану</p>
             <h1 id="management-title">Керування меню</h1>
-            <p>Додавайте страви та оновлюйте інформацію, яку бачать гості.</p>
+            <p>Упорядковуйте страви та швидко знаходьте потрібні позиції.</p>
         </div>
         <a class="button" href="{% url 'dish_add' %}">Додати страву <span aria-hidden="true">＋</span></a>
     </div>
 
-    <div class="management-list">
-        {% for dish in dishes %}
-            <article class="management-dish">
-                <div class="management-dish-info">
-                    <span class="dish-category">{{ dish.category.name }}</span>
-                    <h2>{{ dish.name }}</h2>
-                    <p>{{ dish.description|truncatewords:24 }}</p>
-                    <strong>{{ dish.price }} ₽</strong>
-                </div>
-                <div class="management-actions">
-                    <a class="button button-small" href="{% url 'dish_edit' dish.id %}">Змінити</a>
-                    <form method="post" action="{% url 'dish_delete' dish.id %}" onsubmit="return confirm('Видалити страву «{{ dish.name|escapejs }}»?');">
-                        {% csrf_token %}
-                        <button class="button button-small button-danger" type="submit">Видалити</button>
-                    </form>
-                </div>
-            </article>
-        {% empty %}
-            <div class="empty-state">
+    <div class="management-stats" aria-label="Статистика меню">
+        <div class="management-stat"><span>Усього страв</span><strong>{{ total_dish_count }}</strong></div>
+        <div class="management-stat"><span>Категорій із стравами</span><strong>{{ category_count }}</strong></div>
+        <div class="management-stat"><span>Знайдено</span><strong>{{ visible_dish_count }}</strong></div>
+    </div>
+
+    <form class="management-filters" method="get" role="search">
+        <label class="management-search">
+            <span class="visually-hidden">Пошук страв</span>
+            <span aria-hidden="true">⌕</span>
+            <input type="search" name="q" value="{{ query }}" placeholder="Назва, опис або категорія">
+        </label>
+        <label class="management-category-filter">
+            <span class="visually-hidden">Фільтр за категорією</span>
+            <select name="category">
+                <option value="">Усі категорії</option>
+                {% for category in categories %}
+                    <option value="{{ category.pk }}" {% if selected_category == category.pk|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button class="button button-small" type="submit">Знайти</button>
+        {% if query or selected_category %}<a class="management-reset" href="{% url 'menu_management' %}">Скинути</a>{% endif %}
+    </form>
+
+    {% if dishes %}
+        {% regroup dishes by category as category_groups %}
+        <div class="management-groups">
+            {% for category_group in category_groups %}
+                <section class="management-group" aria-labelledby="category-{{ category_group.grouper.pk }}">
+                    <div class="management-group-heading">
+                        <div><p class="eyebrow">Категорія</p><h2 id="category-{{ category_group.grouper.pk }}">{{ category_group.grouper.name }}</h2></div>
+                        <span>{{ category_group.list|length }} страв</span>
+                    </div>
+                    <div class="management-list">
+                        {% for dish in category_group.list %}
+                            <article class="management-dish">
+                                {% if dish.image %}
+                                    <img class="management-dish-image" src="{{ dish.image.url }}" alt="Фото страви {{ dish.name }}" loading="lazy" decoding="async">
+                                {% elif dish.image_url %}
+                                    <img class="management-dish-image" src="{{ dish.image_url }}" alt="Фото страви {{ dish.name }}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                                {% endif %}
+                                <div class="management-dish-info">
+                                    <h3>{{ dish.name }}</h3>
+                                    <p>{{ dish.description|truncatewords:24 }}</p>
+                                    <strong>{{ dish.price }} ₽</strong>
+                                </div>
+                                <div class="management-actions">
+                                    <a class="button button-small button-outline" href="{% url 'dish_edit' dish.id %}">Змінити</a>
+                                    <form method="post" action="{% url 'dish_delete' dish.id %}" onsubmit="return confirm('Видалити страву «{{ dish.name|escapejs }}»?');">
+                                        {% csrf_token %}
+                                        <button class="button button-small button-danger" type="submit">Видалити</button>
+                                    </form>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state management-empty">
+            {% if total_dish_count %}
+                <h2>Нічого не знайдено</h2>
+                <p>Змініть пошуковий запит або фільтр категорії.</p>
+                <a class="button button-small" href="{% url 'menu_management' %}">Показати всі страви</a>
+            {% else %}
                 <h2>У меню поки немає страв</h2>
                 <p>Додайте першу позицію, щоб вона з’явилася на головній сторінці.</p>
                 <a class="button" href="{% url 'dish_add' %}">Додати першу страву</a>
-            </div>
-        {% endfor %}
-    </div>
+            {% endif %}
+        </div>
+    {% endif %}
 </section>
 {% endblock %}

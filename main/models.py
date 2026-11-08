@@ -1,6 +1,13 @@
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator, URLValidator
 from django.db import models
+
+
+def validate_dish_image_size(image):
+    if image.size > 5 * 1024 * 1024:
+        raise ValidationError('Розмір фото не може перевищувати 5 МБ.')
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name="Назва категорії")
@@ -13,6 +20,23 @@ class Dish(models.Model):
     description = models.TextField(verbose_name="Опис")
     price = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Ціна")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='dishes', verbose_name="Категорія")
+    image = models.ImageField(
+        upload_to='dishes/',
+        blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=('jpg', 'jpeg', 'png', 'webp', 'gif')),
+            validate_dish_image_size,
+        ],
+        verbose_name='Завантажити фото',
+        help_text='JPG, PNG, WebP або GIF; до 5 МБ.',
+    )
+    image_url = models.URLField(
+        max_length=1000,
+        blank=True,
+        validators=[URLValidator(schemes=('https',))],
+        verbose_name='HTTPS-посилання на фото',
+        help_text='Вставте пряме HTTPS-посилання на фото.',
+    )
 
     def __str__(self):
         return self.name

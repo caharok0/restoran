@@ -1,6 +1,12 @@
+from io import BytesIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from decimal import Decimal
+from PIL import Image
 
 from .cart import Cart
 from .models import Category, Dish, Order, Review
@@ -136,6 +142,74 @@ class MenuManagementTests(TestCase):
 		self.assertRedirects(response, '/manage/menu/')
 		self.assertFalse(Dish.objects.filter(pk=dish.pk).exists())
 
+	def test_staff_can_search_and_filter_menu_by_category(self):
+		other_category = Category.objects.create(name='Десерти')
+		Dish.objects.create(
+			name='Шоколадний торт',
+			description='Домашній десерт',
+			price=Decimal('8.00'),
+			category=other_category,
+		)
+		self.client.force_login(self.staff_user)
+
+		response = self.client.get('/manage/menu/', {'q': 'Паста', 'category': self.category.pk})
+
+		self.assertContains(response, 'Паста')
+		self.assertNotContains(response, 'Шоколадний торт')
+		self.assertContains(response, 'Усього страв')
+		self.assertContains(response, 'Знайдено')
+
+	def test_staff_can_upload_a_dish_photo(self):
+		self.client.force_login(self.staff_user)
+		image_data = BytesIO()
+		Image.new('RGB', (2, 2), color='green').save(image_data, format='PNG')
+		image_data.seek(0)
+
+		with TemporaryDirectory() as media_root:
+			with override_settings(MEDIA_ROOT=media_root):
+				response = self.client.post('/manage/menu/add/', {
+					'name': 'Суп з фото',
+					'description': 'Суп із сезонних овочів',
+					'price': '9.00',
+					'category': self.category.pk,
+					'image': SimpleUploadedFile('soup.png', image_data.getvalue(), content_type='image/png'),
+				})
+				self.assertRedirects(response, '/manage/menu/')
+				dish = Dish.objects.get(name='Суп з фото')
+				self.assertTrue(dish.image.name.startswith('dishes/'))
+				self.assertTrue(Path(media_root, dish.image.name).is_file())
+
+	def test_staff_can_add_a_dish_photo_url_and_public_pages_render_it(self):
+		self.client.force_login(self.staff_user)
+		photo_url = 'https://images.example.com/pasta.jpg'
+		response = self.client.post('/manage/menu/add/', {
+			'name': 'Паста з фото',
+			'description': 'Паста з овочами',
+			'price': '12.50',
+			'category': self.category.pk,
+			'image_url': photo_url,
+		})
+		self.assertRedirects(response, '/manage/menu/')
+		dish = Dish.objects.get(name='Паста з фото')
+		self.assertEqual(dish.image_url, photo_url)
+		self.assertContains(self.client.get('/'), photo_url)
+		self.assertContains(self.client.get(f'/dish/{dish.pk}/'), photo_url)
+
+	def test_staff_cannot_use_non_https_photo_url(self):
+		self.client.force_login(self.staff_user)
+		for photo_url in ('http://images.example.com/photo.jpg', 'javascript:alert(1)'):
+			with self.subTest(photo_url=photo_url):
+				response = self.client.post('/manage/menu/add/', {
+					'name': 'Паста з небезпечним URL',
+					'description': 'Паста',
+					'price': '12.50',
+					'category': self.category.pk,
+					'image_url': photo_url,
+				})
+
+				self.assertEqual(response.status_code, 200)
+				self.assertFalse(Dish.objects.filter(name='Паста з небезпечним URL').exists())
+
 	def test_delete_requires_post(self):
 		self.client.force_login(self.staff_user)
 		response = self.client.get(f'/manage/menu/{self.dish.pk}/delete/')
@@ -211,7 +285,12 @@ class ShoppingCartTests(TestCase):
 		self.assertEqual(order.items.get().quantity, 2)
 		self.assertEqual(order.items.get().dish_name, self.dish.name)
 		self.assertEqual(self.client.session.get('cart', {}), {})
-		self.assertContains(self.client.get(response.url), 'Замовлення №')
+		self.dish.delete()
+		confirmation = self.client.get(response.url)
+		self.assertContains(confirmation, 'Замовлення №')
+		self.assertContains(confirmation, order.items.get().dish_name)
+		self.assertContains(confirmation, '2 × 12,50 ₽')
+		self.assertContains(confirmation, '25,00 ₽')
 
 	def test_online_checkout_is_saved_as_awaiting_payment(self):
 		self.client.post(f'/cart/add/{self.dish.pk}/', {'quantity': '1'})

@@ -7,7 +7,14 @@
     <a class="text-link management-back" href="{% url 'menu_management' %}">← Назад до меню</a>
     <p class="eyebrow">Панель ресторану</p>
     <h1 id="dish-form-title">{% if dish %}Змінити страву{% else %}Додати страву{% endif %}</h1>
-    <form method="post" class="management-form">
+    {% if dish.image or dish.image_url %}
+        <div class="management-image-preview">
+            <p class="eyebrow">Поточне фото</p>
+            <img src="{% if dish.image %}{{ dish.image.url }}{% else %}{{ dish.image_url }}{% endif %}" alt="Фото страви {{ dish.name }}">
+        </div>
+    {% endif %}
+    <p class="management-image-help">Додайте фото файлом або вставте пряме посилання. Оберіть лише один спосіб; щоб замінити завантажений файл посиланням, позначте його очищення.</p>
+    <form method="post" class="management-form" enctype="multipart/form-data">
         {% csrf_token %}
         {% if form.non_field_errors %}<div class="form-error-box">{{ form.non_field_errors }}</div>{% endif %}
         {% for field in form %}

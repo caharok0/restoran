@@ -5,6 +5,11 @@
 {% block content %}
 <article class="dish-detail">
     <a class="text-link back-link" href="{% url 'index' %}">← Повернутися до меню</a>
+    {% if dish.image %}
+        <img class="dish-detail-image" src="{{ dish.image.url }}" alt="Фото страви {{ dish.name }}" decoding="async">
+    {% elif dish.image_url %}
+        <img class="dish-detail-image" src="{{ dish.image_url }}" alt="Фото страви {{ dish.name }}" decoding="async" referrerpolicy="no-referrer">
+    {% endif %}
     <p class="eyebrow">{{ dish.category.name }}</p>
     <h1>{{ dish.name }}</h1>
     <p class="detail-description">{{ dish.description }}</p>
