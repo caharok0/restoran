@@ -1,0 +1,5 @@
+{% if image %}
+    <img class="{{ image_class }}" src="{{ image.url }}" alt="Фото страви {{ image_alt }}"{% if image_loading %} loading="{{ image_loading }}"{% endif %} decoding="async">
+{% elif image_url %}
+    <img class="{{ image_class }}" src="{{ image_url }}" alt="Фото страви {{ image_alt }}"{% if image_loading %} loading="{{ image_loading }}"{% endif %} decoding="async" referrerpolicy="no-referrer">
+{% endif %}

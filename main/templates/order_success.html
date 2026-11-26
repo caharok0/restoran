@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Замовлення оформлено | Наш ресторан{% endblock %}
+
+{% block content %}
+<section class="order-success">
+    <span class="order-success-mark" aria-hidden="true">✓</span>
+    <p class="eyebrow">Дякуємо за замовлення</p>
+    <h1>Замовлення №{{ order.pk }} прийнято</h1>
+    <p>Ми зв’яжемося з вами за номером <strong>{{ order.phone }}</strong>, щоб підтвердити доставку.</p>
+    <section class="success-order-items" aria-labelledby="success-items-title">
+        <h2 id="success-items-title">Ваше замовлення</h2>
+        {% for item in order.items.all %}
+            <div class="success-order-item">
+                <div>
+                    <strong>{{ item.dish_name }}</strong>
+                    <span>{{ item.quantity }} × {{ item.unit_price }} ₽</span>
+                </div>
+                <strong class="success-item-total">{{ item.line_total }} ₽</strong>
+            </div>
+        {% empty %}
+            <p class="success-order-empty">Склад замовлення недоступний.</p>
+        {% endfor %}
+    </section>
+    <div class="success-order-total">
+        <span>Сума замовлення</span>
+        <strong>{{ order.total }} ₽</strong>
+        <small>Оплата: {{ order.get_payment_method_display }}</small>
+    </div>
+    {% if order.payment_method == 'online' %}
+        <p>Онлайн-оплату ще не підключено. Менеджер повідомить, як оплатити замовлення після підтвердження.</p>
+    {% endif %}
+    <a class="button" href="{% url 'index' %}">Повернутися до меню</a>
+</section>
+{% endblock %}
